@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Viculogic</title>
+<title>Lógica — simulador de circuitos</title>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 --bg:#0d0e10;--bg2:#131518;--line:#23262b;--mut:#6b7280;--fg:#d6d9de;--ln:#8d939c;--on:#4ade80;--ui:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -15,7 +15,7 @@ header b{font-weight:500;letter-spacing:.12em;margin-right:10px}
 button{font:inherit;color:var(--fg);background:none;border:1px solid var(--line);padding:4px 9px;cursor:pointer;border-radius:0;flex:none}
 button:hover:not(:disabled){border-color:var(--ln)}button:disabled{opacity:.3;cursor:default}
 button.act{border-color:var(--on);color:var(--on)}
-#sel{color:var(--mut);padding-left:10px}#st{margin-left:auto;color:var(--mut)}#st.bad{color:#f87171}label.btn{color:var(--fg);border:1px solid var(--line);padding:4px 9px;cursor:pointer;flex:none}label.btn:hover{border-color:var(--ln)}td.m{color:var(--mut);font-style:italic}td.x{color:#f87171}
+#sel{color:var(--mut);padding-left:10px}#st{margin-left:auto;color:var(--mut)}#st.bad{color:#f87171}label.btn{color:var(--fg);border:1px solid var(--line);padding:4px 9px;cursor:pointer;flex:none}label.btn:hover{border-color:var(--ln)}#nm{width:92px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--ln);padding:3px 6px;border-radius:0;margin-left:10px;outline:none}td.m{color:var(--mut);font-style:italic}td.x{color:#f87171}
 aside{border-right:1px solid var(--line);padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
 aside h6{margin:8px 0 2px;font-weight:400;color:var(--mut);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
 .pal{border:1px solid var(--line);padding:4px 6px 2px;cursor:grab;display:flex;align-items:center;justify-content:space-between;user-select:none;background:var(--bg2)}
@@ -51,7 +51,7 @@ textarea{width:100%;height:260px;background:var(--bg);color:var(--fg);border:1px
 <body>
 <div id="app">
 <header>
-<b>VICULOGIC</b>
+<b>LÓGICA</b>
 <button id="un" title="Deshacer (Ctrl+Z)">↶</button><button id="re" title="Rehacer (Ctrl+Y)">↷</button>
 <div class="sep"></div>
 <button id="zo">−</button><button id="zl" style="min-width:52px">100%</button><button id="zi">+</button><button id="zf">Centrar</button>
@@ -60,8 +60,8 @@ textarea{width:100%;height:260px;background:var(--bg);color:var(--fg);border:1px
 <div class="sep"></div>
 <button id="rm">− entrada</button><button id="ad">+ entrada</button><button id="del">Eliminar</button>
 <div class="sep"></div>
-<button id="sv">Exportar</button><label class="btn" for="fi">Importar</label><button id="cl">Limpiar</button>
-<span id="st"></span><span id="sel"></span>
+<button id="sv">Exportar</button><label class="btn" for="fi">Importar</label><button id="sh">Compartir</button><button id="cl">Limpiar</button><input id="lk" readonly style="display:none;width:150px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--on);padding:3px 6px;border-radius:0;outline:none">
+<span id="st"></span><input id="nm" maxlength="10" placeholder="nombre" title="Nombre (Enter para aplicar)" style="display:none"><span id="sel"></span>
 </header>
 <aside id="pal"></aside>
 <main>
@@ -119,7 +119,7 @@ function nodeSVG(n){
  if(n.t==='IN')s+=`<rect class="body" width="60" height="40"/><rect x="14" y="13" width="30" height="14" rx="7" fill="${v?'#16351f':'#0d0e10'}" stroke="${v?'var(--on)':'var(--ln)'}"/><circle cx="${v?37:21}" cy="20" r="5" fill="${v?'var(--on)':'var(--mut)'}"/><text x="0" y="-7">${n.label||''}</text>`;
  else if(n.t==='OUT')s+=`<rect class="body" width="60" height="40"/><circle cx="20" cy="20" r="8" fill="${v?'var(--on)':'#0d0e10'}" stroke="${v?'var(--on)':'var(--ln)'}" ${v?'style="filter:drop-shadow(0 0 5px var(--on))"':''}/><text x="38" y="26" style="font-size:16px;fill:${v?'var(--on)':'var(--mut)'}">${v}</text><text x="0" y="-7">${n.label||''}</text>`;
  else{const c=nIn(n);for(let i=0;i<c;i++){const y=d.h/2+(i-(c-1)/2)*20;s+=`<path class="stub" d="M0 ${y}H14"/>`}
-  s+=gateSVG(n.t,d.h,v)+`<text x="${d.w/2-10}" y="${d.h+13}" style="font-size:9px">${n.t}</text>`}
+  s+=gateSVG(n.t,d.h,v)+`<text x="${d.w/2}" y="${d.h+13}" text-anchor="middle" style="font-size:9px">${n.label}</text>`}
  return s+`<rect width="${d.w}" height="${d.h}" fill="transparent"/></g>`}
 function pinSVG(n){
  let s='';const hv=S.hov;
@@ -150,6 +150,7 @@ function render(skipTT){
  $('pv').innerHTML=pvSVG();
  const one=S.sel.size===1?nodeById([...S.sel][0]):null;
  $('sel').textContent=one?(one.label||one.t)+(isG(one)&&one.t!=='NOT'?' · '+one.n+' entradas':''):S.sel.size>1?S.sel.size+' seleccionados':'';
+ {const nm=$('nm'),io=one&&!isG(one);nm.style.display=io?'':'none';if(io&&document.activeElement!==nm){nm.value=one.label;nm.dataset.id=one.id}}
  $('ad').disabled=!(one&&isG(one)&&one.t!=='NOT'&&one.n<8);
  $('rm').disabled=!(one&&isG(one)&&one.t!=='NOT'&&one.n>2);
  $('del').disabled=!(S.sel.size||S.selW);
@@ -157,7 +158,16 @@ function render(skipTT){
  $('un').disabled=S.hi<=0;$('re').disabled=S.hi>=S.hist.length-1;
  if(!skipTT)table();
 }
-function relabel(){let a=0,b=0;for(const n of S.nodes){if(n.t==='IN')n.label=String.fromCharCode(65+a++);if(n.t==='OUT')n.label='Q'+(++b)}}
+function relabel(){
+ const seen=new Set();
+ for(const n of S.nodes){if(isG(n)||!n.name)continue;const k=n.name.toLowerCase();if(seen.has(k))n.name='';else seen.add(k)}
+ const letter=i=>{let s='';i++;while(i>0){const r=(i-1)%26;s=String.fromCharCode(65+r)+s;i=Math.floor((i-1)/26)}return s};
+ let a=0,b=0;const cnt={};
+ for(const n of S.nodes){
+  if(isG(n)){cnt[n.t]=(cnt[n.t]||0)+1;n.label=n.t+' '+cnt[n.t];continue}
+  if(n.name){n.label=n.name;continue}
+  let l;if(n.t==='IN'){do l=letter(a++);while(seen.has(l.toLowerCase()))}else{do l='Q'+(++b);while(seen.has(l.toLowerCase()))}
+  seen.add(l.toLowerCase());n.label=l}}
 function table(){
  const ins=S.nodes.filter(n=>n.t==='IN'),outs=S.nodes.filter(n=>n.t==='OUT'),el=$('tt');
  let h=`<h6 id="tth"><span>Tabla de verdad</span><span>${S.ttOpen?'–':'+'}</span></h6>`;
@@ -175,7 +185,7 @@ function table(){
    h+='</table>'+(S.cyc?'<p>mem = conserva el valor anterior · osc = oscila</p>':'')}}
  el.innerHTML=h;$('tth').onclick=()=>{S.ttOpen=!S.ttOpen;table()}}
 // estado, historial y guardado
-const ser=()=>({v:1,nodes:S.nodes.map(({id,t,x,y,n,v})=>({id,t,x,y,n,v})),wires:S.wires.map(({id,from,to,pin,mx,my})=>({id,from,to,pin,mx,my}))});
+const ser=()=>({v:1,nodes:S.nodes.map(({id,t,x,y,n,v,name})=>({id,t,x,y,n,v,name:name||undefined})),wires:S.wires.map(({id,from,to,pin,mx,my})=>({id,from,to,pin,mx,my}))});
 const hkey=o=>JSON.stringify([o.nodes.map(n=>({...n,v:0})),o.wires]);
 function pushHist(){const o=ser(),k=hkey(o);if(S.hist[S.hi]&&S.hist[S.hi].k===k)return;
  S.hist=S.hist.slice(0,S.hi+1);S.hist.push({k,s:JSON.stringify(o)});if(S.hist.length>100)S.hist.shift();S.hi=S.hist.length-1}
@@ -183,7 +193,7 @@ function autosave(){try{localStorage.setItem('logica',JSON.stringify(ser()))}cat
 function commit(){relabel();pushHist();render();autosave()}
 function apply(o,keepV){
  const vs={};if(keepV)S.nodes.forEach(n=>vs[n.id]=n.v);
- S.nodes=o.nodes.map(n=>({id:+n.id,t:String(n.t),x:+n.x||0,y:+n.y||0,n:Math.min(8,Math.max(2,+n.n||2)),v:keepV&&n.id in vs?vs[n.id]:(n.v?1:0)})).filter(n=>['IN','OUT',...GATES].includes(n.t));
+ S.nodes=o.nodes.map(n=>({id:+n.id,t:String(n.t),x:+n.x||0,y:+n.y||0,n:Math.min(8,Math.max(2,+n.n||2)),v:keepV&&n.id in vs?vs[n.id]:(n.v?1:0),name:String(n.name||'').replace(/[<>&"'`]/g,'').trim().slice(0,10)})).filter(n=>['IN','OUT',...GATES].includes(n.t));
  const ids=new Set(S.nodes.map(n=>n.id));
  S.wires=o.wires.filter(w=>ids.has(w.from)&&ids.has(w.to)).map(w=>({id:+w.id,from:+w.from,to:+w.to,pin:+w.pin,mx:w.mx==null?undefined:+w.mx,my:w.my==null?undefined:+w.my}));
  S.seq=Math.max(S.seq,1+Math.max(0,...S.nodes.map(n=>n.id),...S.wires.map(w=>w.id)));S.sel=new Set();S.selW=null;S.pend=null;S.st={};relabel()}
@@ -261,6 +271,15 @@ addEventListener('keydown',e=>{if(/TEXTAREA|INPUT/.test(e.target.tagName))return
  else if(c&&k==='a'){e.preventDefault();S.sel=new Set(S.nodes.map(n=>n.id));render(true)}
  else if(e.key==='Delete'||e.key==='Backspace')delSel();
  else if(e.key==='Escape'){S.pend=null;render(true)}});
+$('nm').onchange=()=>{const nm=$('nm'),n=nodeById(+nm.dataset.id);if(!n)return;
+ const v=nm.value.replace(/[<>&"'`]/g,'').trim().slice(0,10);
+ if(!v){n.name='';commit();return}
+ if(S.nodes.some(o=>o!==n&&!isG(o)&&o.label.toLowerCase()===v.toLowerCase())){msg('⚠ nombre repetido');return}
+ n.name=v;commit()};
+$('nm').onkeydown=e=>{const nm=$('nm');if(e.key==='Enter')nm.blur();if(e.key==='Escape'){const n=nodeById(+nm.dataset.id);nm.value=n?n.label:'';nm.blur()}};
+$('nm').onblur=()=>render(true);
+cv.addEventListener('dblclick',e=>{const nd=e.target.closest('.node');if(!nd)return;const n=nodeById(+nd.dataset.id);
+ if(n&&!isG(n)){S.sel=new Set([n.id]);render(true);const nm=$('nm');nm.focus();nm.select()}});
 $('ad').onclick=()=>{const n=nodeById([...S.sel][0]);if(n&&n.n<8){n.n++;commit()}};
 $('rm').onclick=()=>{const n=nodeById([...S.sel][0]);if(n&&n.n>2){n.n--;S.wires=S.wires.filter(w=>!(w.to===n.id&&w.pin>=n.n));commit()}};
 $('cl').onclick=()=>{S.nodes=[];S.wires=[];S.sel=new Set();S.selW=null;commit()};
@@ -289,6 +308,24 @@ $('sv').onclick=async()=>{
  catch(e){msg('⚠ no se pudo exportar')}};
 $('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{load(r.result);$('fi').value=''};r.readAsText(f)};
 function load(txt){try{const o=JSON.parse(txt);if(!Array.isArray(o.nodes)||!Array.isArray(o.wires))throw 0;apply(o,false);commit()}catch(e){msg('⚠ archivo no válido')}}
+// compartir por enlace (el circuito viaja comprimido en el #hash de la URL)
+const BASE='https://vicubyte.com/logic';
+function b64(u){let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function enc(str){const b=new TextEncoder().encode(str);
+ if(window.CompressionStream){const st=new Blob([b]).stream().pipeThrough(new CompressionStream('deflate-raw'));return 'z'+b64(new Uint8Array(await new Response(st).arrayBuffer()))}
+ return 'p'+b64(b)}
+async function dec(s){const raw=s.slice(1).replace(/-/g,'+').replace(/_/g,'/'),bin=atob(raw),u=Uint8Array.from(bin,c=>c.charCodeAt(0));
+ if(s[0]==='z'){const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(st).text()}
+ return new TextDecoder().decode(u)}
+$('sh').onclick=async()=>{
+ const link=BASE+'#c='+await enc(JSON.stringify(ser())),lk=$('lk');let ok=false;
+ try{await navigator.clipboard.writeText(link);ok=true}catch(e){}
+ if(ok){lk.style.display='none';msg('Enlace copiado')}else{lk.value=link;lk.style.display='';lk.focus();lk.select();msg('Copia el enlace con Ctrl+C')}};
+async function loadHash(){let h='';try{h=location.hash}catch(e){}
+ if(!/c=/.test(h)){try{h=top.location.hash}catch(e){}}
+ const m=/[#&]c=([\w-]+)/.exec(h||'');if(!m)return;
+ try{const t=await dec(m[1]);if(t.length>400000)throw 0;const o=JSON.parse(t);if(!Array.isArray(o.nodes)||!Array.isArray(o.wires))throw 0;
+  apply(o,false);S.hist=[];S.hi=-1;relabel();pushHist();render();msg('Circuito compartido cargado')}catch(e){msg('⚠ enlace no válido')}}
 // inicio
 let init=null;try{init=localStorage.getItem('logica')}catch(e){}
 if(init){try{apply(JSON.parse(init),false)}catch(e){}}
@@ -297,5 +334,6 @@ if(!S.nodes.length){
  S.wires.push({id:S.seq++,from:a.id,to:g.id,pin:0},{id:S.seq++,from:b.id,to:g.id,pin:1},{id:S.seq++,from:g.id,to:q.id,pin:0});
  a.v=1;S.sel=new Set()}
 relabel();S.hist=[];S.hi=-1;pushHist();render();
+loadHash();addEventListener('hashchange',loadHash);
 </script>
 </body></html>
